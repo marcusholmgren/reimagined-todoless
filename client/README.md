@@ -1,5 +1,16 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment variables
+
+You need to create a `.env` file with following variable for the application to work and configure `client/src/config.ts`
+
+```
+REACT_APP_API_ENDPOINT=https://todo.execute-api.us-east-1.amazonaws.com/dev
+REACT_APP_AUTH0_DOMAIN=yourdomain
+REACT_APP_AUTH0_CLIENT_ID=123abc
+REACT_APP_AUTH0_CALLBACK_URL=http://localhost:3000/callback
+```
+
 ## Available Scripts
 
 In the project directory, you can run:

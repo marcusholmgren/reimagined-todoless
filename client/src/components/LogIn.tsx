@@ -1,27 +1,23 @@
-import * as React from 'react'
-import Auth from '../auth/Auth'
-import { Button } from 'semantic-ui-react'
+import * as React from "react";
+import Auth from "../auth/Auth";
+import { Button } from "semantic-ui-react";
 
 interface LogInProps {
-  auth: Auth
+  auth: Auth;
 }
 
-interface LogInState {}
+export function LogIn({ auth }: LogInProps) {
+  const onLogin = () => {
+    auth.login();
+  };
 
-export class LogIn extends React.PureComponent<LogInProps, LogInState> {
-  onLogin = () => {
-    this.props.auth.login()
-  }
+  return (
+    <div>
+      <h1>Please log in</h1>
 
-  render() {
-    return (
-      <div>
-        <h1>Please log in</h1>
-
-        <Button onClick={this.onLogin} size="huge" color="olive">
-          Log in
-        </Button>
-      </div>
-    )
-  }
+      <Button onClick={onLogin} size="huge" color="olive">
+        Log in
+      </Button>
+    </div>
+  );
 }
