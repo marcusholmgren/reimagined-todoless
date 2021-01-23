@@ -1,9 +1,12 @@
-service:
-  name: serverless-todo-app
+service: serverless-todo-app
 
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
+
+# custom:
+#  settings:
+#    TODOS_DYNAMODB_TABLE: todos
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -17,18 +20,36 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
 
+  apiGateway:
+    shouldStartNameWithService: true
+
+  environment:
+    TODOS_DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    AUTH_0_SECRET: -WQhnxfkdOAf_INIi_UgQvcYLhs8CyEF1jAxyEvSGIOp5pfM5e9W6gr0VmGhsgZE
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}"
+
 functions:
 
-  Auth:
-    handler: src/lambda/auth/auth0Authorizer.handler
-
-  # TODO: Configure this function
-  GetTodos:
-    handler: src/lambda/http/getTodos.handler
-    events:
-      - http:
-          method: get
-          path: todos
+#  Auth:
+#    handler: src/lambda/auth/auth0Authorizer.handler
+#
+#  # TODO: Configure this function
+#  GetTodos:
+#    handler: src/lambda/http/getTodos.handler
+#    events:
+#      - http:
+#          method: get
+#          path: todos
 
   # TODO: Configure this function
   CreateTodo:
@@ -38,30 +59,51 @@ functions:
           method: post
           path: todos
 
-  # TODO: Configure this function
-  UpdateTodo:
-    handler: src/lambda/http/updateTodo.handler
-    events:
-      - http:
-          method: patch
-          path: todos/{todoId}
-
-  # TODO: Configure this function
-  DeleteTodo:
-    handler: src/lambda/http/deleteTodo.handler
-    events:
-      - http:
-          method: delete
-          path: todos/{todoId}
-
-  # TODO: Configure this function
-  GenerateUploadUrl:
-    handler: src/lambda/http/generateUploadUrl.handler
-    events:
-      - http:
-          method: post
-          path: todos/{todoId}/attachment
+#  # TODO: Configure this function
+#  UpdateTodo:
+#    handler: src/lambda/http/updateTodo.handler
+#    events:
+#      - http:
+#          method: patch
+#          path: todos/{todoId}
+#
+#  # TODO: Configure this function
+#  DeleteTodo:
+#    handler: src/lambda/http/deleteTodo.handler
+#    events:
+#      - http:
+#          method: delete
+#          path: todos/{todoId}
+#
+#  # TODO: Configure this function
+#  GenerateUploadUrl:
+#    handler: src/lambda/http/generateUploadUrl.handler
+#    events:
+#      - http:
+#          method: post
+#          path: todos/{todoId}/attachment
 
 resources:
   Resources:
     # TODO: Add any necessary AWS resources
+
+    TodosTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: "todoId"
+          AttributeType: "S"
+        - AttributeName: "userId"
+          AttributeType: "S"
+        KeySchema:
+        - AttributeName: "todoId"
+          KeyType: "HASH"
+        GlobalSecondaryIndexes:
+        - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: "userId"
+                KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.TODOS_DYNAMODB_TABLE}
