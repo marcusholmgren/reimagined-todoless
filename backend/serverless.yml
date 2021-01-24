@@ -1,9 +1,12 @@
-service:
-  name: serverless-todo-app
+service: serverless-todo-app
 
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
+
+# custom:
+#  settings:
+#    TODOS_DYNAMODB_TABLE: todos
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -16,6 +19,24 @@ provider:
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
+
+  apiGateway:
+    shouldStartNameWithService: true
+
+  environment:
+    TODOS_DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    AUTH_0_SECRET: -WQhnxfkdOAf_INIi_UgQvcYLhs8CyEF1jAxyEvSGIOp5pfM5e9W6gr0VmGhsgZE
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}"
 
 functions:
 
@@ -65,3 +86,29 @@ functions:
 resources:
   Resources:
     # TODO: Add any necessary AWS resources
+
+    TodosTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: "todoId"
+          AttributeType: "S"
+        - AttributeName: "userId"
+          AttributeType: "S"
+        KeySchema:
+        - AttributeName: "todoId"
+          KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.TODOS_DYNAMODB_TABLE}
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: "userId"
+                KeyType: "HASH"
+            Projection:
+              ProjectionType: "ALL"
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
