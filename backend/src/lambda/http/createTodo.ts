@@ -13,7 +13,7 @@ const log = createLogger('todoless')
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const newTodo: CreateTodoRequest = JSON.parse(event.body)
-    const userId = 'marcus' //getUserId(event)
+    const userId = getUserId(event)
 
     const todoItem: TodoItem = {
         ...newTodo,

@@ -64,7 +64,7 @@ async function verifyToken(authHeader: string): Promise<JwtPayload> {
   // You can read more about how to do this here: https://auth0.com/blog/navigating-rs256-and-jwks/
   //const secret = process.env.AUTH_0_SECRET
 
- //verify(token, secret)
+ //return verify(token, secret) as JwtToken
  // If an exception is not thrown a JWT is valid
 
   //return jwt.payload
@@ -74,7 +74,7 @@ async function verifyToken(authHeader: string): Promise<JwtPayload> {
     logger.info(response);
     const verifedToken = verify(token,response.data,{algorithms:['RS256']})
 
-    logger.info('verfied toekn',verifedToken)
+    logger.info('verified token',verifedToken)
     return  verifedToken as JwtPayload
   } catch (error) {
     logger.error(error);
