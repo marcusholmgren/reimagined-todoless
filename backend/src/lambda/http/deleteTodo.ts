@@ -13,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     const params: DynamoDB.DocumentClient.DeleteItemInput = {
         TableName: process.env.TODOS_DYNAMODB_TABLE,
         Key: {
-            id: todoId
+            todoId: todoId
         }
     }
 
