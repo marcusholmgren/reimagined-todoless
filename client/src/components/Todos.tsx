@@ -17,6 +17,7 @@ import {
 import { createTodo, deleteTodo, getTodos, patchTodo } from "../api/todos-api";
 import Auth from "../auth/Auth";
 import { Todo } from "../types/Todo";
+import {ErrorMessage} from './Message'
 
 interface TodosProps {
   auth: Auth;
@@ -27,6 +28,7 @@ interface TodosState {
   todos: Todo[];
   newTodoName: string;
   loadingTodos: boolean;
+  warning: { header: string, message: string } | null;
 }
 
 export class Todos extends React.PureComponent<TodosProps, TodosState> {
@@ -34,6 +36,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     todos: [],
     newTodoName: "",
     loadingTodos: true,
+    warning: null
   };
 
   handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,12 +54,20 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
         name: this.state.newTodoName,
         dueDate,
       });
-      this.setState({
-        todos: [...this.state.todos, newTodo],
-        newTodoName: "",
-      });
-    } catch {
-      alert("Todo creation failed");
+      if (newTodo) {
+        this.setState({
+          todos: [...this.state.todos, newTodo],
+          newTodoName: "",
+        });
+      }
+    } catch(e) {
+            this.setState({
+        loadingTodos: false,
+        warning: {
+          header: 'Todo creation failed',
+          message: `Todo creation failed: ${e.message}`
+        }
+      })
     }
   };
 
@@ -66,8 +77,14 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
       this.setState({
         todos: this.state.todos.filter((todo) => todo.todoId !== todoId),
       });
-    } catch {
-      alert("Todo deletion failed");
+    } catch (e){
+            this.setState({
+        loadingTodos: false,
+        warning: {
+          header: 'Todo deletion failed',
+          message: `Todo deletion failed: ${e.message}`
+        }
+      })
     }
   };
 
@@ -84,28 +101,44 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
           [pos]: { done: { $set: !todo.done } },
         }),
       });
-    } catch {
-      alert("Todo deletion failed");
+    } catch(e) {
+            this.setState({
+        loadingTodos: false,
+        warning: {
+          header: 'Todo update failed',
+          message: `Todo update failed: ${e.message}`
+        }
+      })
     }
   };
 
   async componentDidMount() {
     try {
       const todos = await getTodos(this.props.auth.getIdToken());
-      this.setState({
-        todos,
-        loadingTodos: false,
-      });
+      if (todos) {
+        this.setState({
+          todos,
+          loadingTodos: false,
+        });
+      }
     } catch (e) {
-      alert(`Failed to fetch todos: ${e.message}`);
+      this.setState({
+        loadingTodos: false,
+        warning: {
+          header: 'Failed to fetch todos',
+          message: `Failed to fetch todos: ${e.message}`
+        }
+      })
     }
   }
 
   render() {
+        const errorElement = this.state.warning ? (<ErrorMessage header={this.state.warning.header} message={this.state.warning.message} />) : null;
+
     return (
       <div>
         <Header as="h1">TODOs</Header>
-
+        {errorElement}
         {this.renderCreateTodoInput()}
 
         {this.renderTodos()}
@@ -160,6 +193,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     return (
       <Grid padded>
         {this.state.todos.map((todo, pos) => {
+          console.log(todo)
           return (
             <Grid.Row key={todo.todoId}>
               <Grid.Column width={1} verticalAlign="middle">
