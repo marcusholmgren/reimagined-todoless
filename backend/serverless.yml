@@ -25,6 +25,7 @@ provider:
 
   environment:
     TODOS_DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    TODOS_DYNAMODB_USER_INDEX: UserIdIndex
     AUTH_0_SECRET: -WQhnxfkdOAf_INIi_UgQvcYLhs8CyEF1jAxyEvSGIOp5pfM5e9W6gr0VmGhsgZE
 
   iamRoleStatements:
@@ -37,6 +38,10 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}/index/${self:provider.environment.TODOS_DYNAMODB_USER_INDEX}"
 
 functions:
 
@@ -50,6 +55,8 @@ functions:
       - http:
           method: get
           path: todos
+          authorizer: Auth
+          cors: true
 
   # TODO: Configure this function
   CreateTodo:
@@ -58,6 +65,8 @@ functions:
       - http:
           method: post
           path: todos
+          authorizer: Auth
+          cors: true
 
   # TODO: Configure this function
   UpdateTodo:
@@ -66,6 +75,8 @@ functions:
       - http:
           method: patch
           path: todos/{todoId}
+          authorizer: Auth
+          cors: true
 
   # TODO: Configure this function
   DeleteTodo:
@@ -74,6 +85,8 @@ functions:
       - http:
           method: delete
           path: todos/{todoId}
+          authorizer: Auth
+          cors: true
 
   # TODO: Configure this function
   GenerateUploadUrl:
@@ -82,6 +95,9 @@ functions:
       - http:
           method: post
           path: todos/{todoId}/attachment
+          authorizer: Auth
+          cors: true
+
 
 resources:
   Resources:
@@ -91,19 +107,19 @@ resources:
       Type: "AWS::DynamoDB::Table"
       Properties:
         AttributeDefinitions:
-        - AttributeName: "todoId"
-          AttributeType: "S"
-        - AttributeName: "userId"
-          AttributeType: "S"
+          - AttributeName: "todoId"
+            AttributeType: "S"
+          - AttributeName: "userId"
+            AttributeType: "S"
         KeySchema:
-        - AttributeName: "todoId"
-          KeyType: "HASH"
+          - AttributeName: "todoId"
+            KeyType: "HASH"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.TODOS_DYNAMODB_TABLE}
         GlobalSecondaryIndexes:
-          - IndexName: UserIdIndex
+          - IndexName: ${self:provider.environment.TODOS_DYNAMODB_USER_INDEX}
             KeySchema:
               - AttributeName: "userId"
                 KeyType: "HASH"
@@ -112,3 +128,25 @@ resources:
             ProvisionedThroughput:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
+
+    # This response is needed for custom authorizer failures cors support ¯\_(ツ)_/¯
+    GatewayResponse:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: EXPIRED_TOKEN
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+        StatusCode: '401'
+    AuthFailureGatewayResponse:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+        StatusCode: '401'

@@ -2,16 +2,17 @@ import 'source-map-support/register'
 import {v4 as uuidv4} from 'uuid'
 import { DynamoDB } from 'aws-sdk'
 import {APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult} from 'aws-lambda'
+import * as middy from 'middy'
+import { cors } from 'middy/middlewares'
 import {CreateTodoRequest} from '../../requests/CreateTodoRequest'
 import {TodoItem} from "../../models/TodoItem";
 import {createLogger} from "../../utils/logger";
-// @ts-ignore
 import {getUserId} from "../utils";
 
 const dynamo = new DynamoDB.DocumentClient();
 const log = createLogger('todoless')
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const newTodo: CreateTodoRequest = JSON.parse(event.body)
     const userId = getUserId(event)
 
@@ -30,17 +31,15 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
     try {
         const results = await dynamo.put(params).promise()
-        log.info(`Stored message in DynamoDB. ${results.Attributes}`)
+        log.info(`Stored message in DynamoDB. ${results.$response}`)
 
 
         const response = {
             statusCode: 201,
-            body: JSON.stringify(params.Item),
+            body: JSON.stringify({ item: params.Item }),
         };
 
         return response
-        // TODO: Implement creating a new TODO item
-        // return undefined
     } catch (error) {
         const message = `Failed to store TODO item. ${error}`
         log.error(message)
@@ -50,4 +49,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         }
         return response
     }
-}
+}).use(cors(
+    { credentials: true }
+    )
+)
