@@ -1,15 +1,16 @@
 import 'source-map-support/register'
 import {DynamoDB} from 'aws-sdk'
 import {APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult} from 'aws-lambda'
+import * as middy from 'middy'
+import { cors } from 'middy/middlewares'
 import {createLogger} from "../../utils/logger";
 
 const dynamo = new DynamoDB.DocumentClient();
 const log = createLogger('todoless')
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const todoId = event.pathParameters.todoId
 
-    // TODO: Remove a TODO item by id
     const params: DynamoDB.DocumentClient.DeleteItemInput = {
         TableName: process.env.TODOS_DYNAMODB_TABLE,
         Key: {
@@ -35,4 +36,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         }
         return response
     }
-}
+}).use(cors(
+    { credentials: true }
+    )
+)

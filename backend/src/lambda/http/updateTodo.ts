@@ -1,18 +1,17 @@
 import 'source-map-support/register'
 import {DynamoDB} from 'aws-sdk'
 import {APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult} from 'aws-lambda'
-
+import * as middy from 'middy'
+import { cors } from 'middy/middlewares'
 import {UpdateTodoRequest} from '../../requests/UpdateTodoRequest'
 import {createLogger} from "../../utils/logger";
 
 const dynamo = new DynamoDB.DocumentClient();
 const log = createLogger('todoless')
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const todoId = event.pathParameters.todoId
     const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
-
-    // TODO: Update a TODO item with the provided id using values in the "updatedTodo" object
 
     log.info(`Patch request item: ${updatedTodo}`)
 
@@ -40,8 +39,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
         log.info(`Update result: ${result.Attributes}`)
         const response = {
-            statusCode: 200,
-            body: JSON.stringify(result.Attributes)
+            statusCode: 204,
+            body: JSON.stringify({})
         }
         return response
     } catch (error) {
@@ -53,4 +52,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         }
         return response
     }
-}
+}).use(cors(
+    { credentials: true }
+    )
+)
