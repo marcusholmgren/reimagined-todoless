@@ -26,7 +26,7 @@ provider:
   environment:
     TODOS_DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
     TODOS_DYNAMODB_USER_INDEX: UserIdIndex
-    AUTH_0_SECRET: -WQhnxfkdOAf_INIi_UgQvcYLhs8CyEF1jAxyEvSGIOp5pfM5e9W6gr0VmGhsgZE
+    TODOS_ATTACHMENT_BUCKET: reimagined-todoless-${self:provider.stage}
 
   iamRoleStatements:
     - Effect: Allow
@@ -42,6 +42,10 @@ provider:
       Action:
         - dynamodb:Query
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}/index/${self:provider.environment.TODOS_DYNAMODB_USER_INDEX}"
+    - Effect: Allow
+      Action:
+        - 's3:*'
+      Resource: arn:aws:s3:::${self:provider.environment.TODOS_ATTACHMENT_BUCKET}/*
 
 functions:
 
@@ -150,3 +154,22 @@ resources:
         RestApiId:
           Ref: 'ApiGatewayRestApi'
         StatusCode: '401'
+
+    TodoBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.TODOS_ATTACHMENT_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - "Authorization"
+              AllowedMethods:
+                - GET
+              AllowedOrigins:
+                - "*"
+            - AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - PUT
+              AllowedOrigins:
+                - "*"
