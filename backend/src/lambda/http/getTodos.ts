@@ -7,7 +7,7 @@ import {createLogger} from "../../utils/logger";
 import {getUserId} from "../utils";
 import {TodoItem} from "../../models/TodoItem";
 
-const s3 = new S3({ signatureVersion: 'v4' })
+const s3 = new S3({signatureVersion: 'v4'})
 const dynamo = new DynamoDB.DocumentClient();
 const log = createLogger('todoless')
 const bucket = process.env.TODOS_ATTACHMENT_BUCKET
@@ -29,10 +29,12 @@ export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayPro
         const result = await dynamo.query(params).promise();
 
         try {
-            result.Items.forEach((item: TodoItem) => {
-                const url = getSignedUrl(item.todoId)
-                item.attachmentUrl = url;
-            })
+            result.Items
+                .filter((item: TodoItem) => item.attachmentUrl)
+                .forEach((item: TodoItem) => {
+                    const url = getSignedUrl(item.todoId)
+                    item.attachmentUrl = url;
+                })
         } catch (e) {
             log.error(`Failed to get signedUrl: ${e}`)
         }

@@ -17,7 +17,7 @@ import {
 import { createTodo, deleteTodo, getTodos, patchTodo } from "../api/todos-api";
 import Auth from "../auth/Auth";
 import { Todo } from "../types/Todo";
-import {ErrorMessage} from './Message'
+import {ErrorMessage} from './MessagePanel'
 
 interface TodosProps {
   auth: Auth;
@@ -78,7 +78,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
         todos: this.state.todos.filter((todo) => todo.todoId !== todoId),
       });
     } catch (e){
-            this.setState({
+      this.setState({
         loadingTodos: false,
         warning: {
           header: 'Todo deletion failed',

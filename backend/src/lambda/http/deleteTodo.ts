@@ -1,12 +1,14 @@
 import 'source-map-support/register'
-import {DynamoDB} from 'aws-sdk'
+import {DynamoDB, S3} from 'aws-sdk'
 import {APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult} from 'aws-lambda'
 import * as middy from 'middy'
 import { cors } from 'middy/middlewares'
 import {createLogger} from "../../utils/logger";
 
 const dynamo = new DynamoDB.DocumentClient();
+const s3 = new S3({signatureVersion: 'v4'})
 const log = createLogger('todoless')
+const bucket = process.env.TODOS_ATTACHMENT_BUCKET
 
 export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const todoId = event.pathParameters.todoId
@@ -19,7 +21,8 @@ export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayPro
     }
 
     try {
-        const result = await dynamo.delete(params).promise();
+        const result = await dynamo.delete(params).promise()
+        await deleteAttachment(todoId)
         log.info(`Successfully deleted todo: ${result.$response}`)
 
         const response = {
@@ -40,3 +43,14 @@ export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayPro
     { credentials: true }
     )
 )
+
+
+async function deleteAttachment(todoId: string) {
+
+    const params: S3.DeleteObjectRequest = {
+        Bucket: bucket,
+        Key: `${todoId}`
+    }
+
+    await s3.deleteObject(params).promise()
+}

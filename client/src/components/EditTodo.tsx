@@ -2,6 +2,7 @@ import * as React from "react";
 import { Form, Button } from "semantic-ui-react";
 import Auth from "../auth/Auth";
 import { getUploadUrl, uploadFile } from "../api/todos-api";
+import {WarningMessage} from './MessagePanel'
 
 enum UploadState {
   NoUpload,
@@ -21,6 +22,7 @@ interface EditTodoProps {
 interface EditTodoState {
   file: any;
   uploadState: UploadState;
+  warning: { header: string, message: string } | null;
 }
 
 export class EditTodo extends React.PureComponent<
@@ -30,6 +32,7 @@ export class EditTodo extends React.PureComponent<
   state: EditTodoState = {
     file: undefined,
     uploadState: UploadState.NoUpload,
+    warning: null
   };
 
   handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,7 +49,13 @@ export class EditTodo extends React.PureComponent<
 
     try {
       if (!this.state.file) {
-        alert("File should be selected");
+        //alert("File should be selected");
+              this.setState({
+        warning: {
+          header: "File should be selected",
+          message: "File should be selected"
+        }
+      })
         return;
       }
 
@@ -59,9 +68,21 @@ export class EditTodo extends React.PureComponent<
       this.setUploadState(UploadState.UploadingFile);
       await uploadFile(uploadUrl, this.state.file);
 
-      alert("File was uploaded!");
+      //alert("File was uploaded!");
+            this.setState({
+        warning: {
+          header: "File was uploaded!",
+          message: "File was uploaded!"
+        }
+      })
     } catch (e) {
-      alert("Could not upload a file: " + e.message);
+      //alert("Could not upload a file: " + e.message);
+            this.setState({
+        warning: {
+          header: 'File upload failed',
+          message: `Could not upload a file: ${e.message}`
+        }
+      })
     } finally {
       this.setUploadState(UploadState.NoUpload);
     }
@@ -74,10 +95,13 @@ export class EditTodo extends React.PureComponent<
   }
 
   render() {
+    const warningElement = this.state.warning ?
+      (<WarningMessage header={this.state.warning.header} message={this.state.warning.message} />) : null
+
     return (
       <div>
         <h1>Upload new image</h1>
-
+        {warningElement}
         <Form onSubmit={this.handleSubmit}>
           <Form.Field>
             <label>File</label>

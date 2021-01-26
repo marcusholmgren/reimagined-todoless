@@ -47,12 +47,15 @@ provider:
         - 's3:*'
       Resource: arn:aws:s3:::${self:provider.environment.TODOS_ATTACHMENT_BUCKET}/*
 
+  tracing:
+    lambda: true
+    apiGateway: true
+
 functions:
 
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
@@ -62,7 +65,6 @@ functions:
           authorizer: Auth
           cors: true
 
-  # TODO: Configure this function
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
@@ -72,7 +74,6 @@ functions:
           authorizer: Auth
           cors: true
 
-  # TODO: Configure this function
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
@@ -82,7 +83,6 @@ functions:
           authorizer: Auth
           cors: true
 
-  # TODO: Configure this function
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
@@ -92,7 +92,6 @@ functions:
           authorizer: Auth
           cors: true
 
-  # TODO: Configure this function
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
     events:
@@ -105,8 +104,6 @@ functions:
 
 resources:
   Resources:
-    # TODO: Add any necessary AWS resources
-
     TodosTable:
       Type: "AWS::DynamoDB::Table"
       Properties:
