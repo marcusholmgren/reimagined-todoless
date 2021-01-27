@@ -4,7 +4,7 @@ import * as AWSXRay from 'aws-xray-sdk'
 import {APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler} from 'aws-lambda'
 import * as middy from 'middy'
 import {cors} from 'middy/middlewares'
-import {createLogger} from "../../utils/logger";
+import {createLogger} from "../../../utils/logger";
 
 const XAWS = AWSXRay.captureAWS(AWS)
 const s3 = new XAWS.S3({ signatureVersion: 'v4' })

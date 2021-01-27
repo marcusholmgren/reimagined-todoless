@@ -57,7 +57,7 @@ functions:
     handler: src/lambda/auth/auth0Authorizer.handler
 
   GetTodos:
-    handler: src/lambda/http/getTodos.handler
+    handler: src/lambda/todos/get/getTodos.handler
     events:
       - http:
           method: get
@@ -81,7 +81,7 @@ functions:
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}
 
   UpdateTodo:
-    handler: src/lambda/http/updateTodo.handler
+    handler: src/lambda/todos/update/updateTodo.handler
     events:
       - http:
           method: patch
@@ -90,7 +90,7 @@ functions:
           cors: true
 
   DeleteTodo:
-    handler: src/lambda/http/deleteTodo.handler
+    handler: src/lambda/todos/delete/deleteTodo.handler
     events:
       - http:
           method: delete
@@ -99,7 +99,7 @@ functions:
           cors: true
 
   GenerateUploadUrl:
-    handler: src/lambda/http/generateUploadUrl.handler
+    handler: src/lambda/todos/attachmentUpload/generateUploadUrl.handler
     events:
       - http:
           method: post

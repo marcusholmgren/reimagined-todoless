@@ -3,8 +3,8 @@ import {DynamoDB} from 'aws-sdk'
 import {APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult} from 'aws-lambda'
 import * as middy from 'middy'
 import { cors } from 'middy/middlewares'
-import {UpdateTodoRequest} from '../../requests/UpdateTodoRequest'
-import {createLogger} from "../../utils/logger";
+import {UpdateTodoRequest} from '../../../requests/UpdateTodoRequest'
+import {createLogger} from "../../../utils/logger";
 
 const dynamo = new DynamoDB.DocumentClient();
 const log = createLogger('todoless')

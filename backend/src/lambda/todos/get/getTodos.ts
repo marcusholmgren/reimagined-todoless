@@ -3,9 +3,9 @@ import {DynamoDB, S3} from 'aws-sdk'
 import {APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler} from 'aws-lambda'
 import * as middy from 'middy'
 import {cors} from 'middy/middlewares'
-import {createLogger} from "../../utils/logger";
-import {getUserId} from "../utils";
-import {TodoItem} from "../../models/TodoItem";
+import {createLogger} from "../../../utils/logger";
+import {getUserId} from "../../utils";
+import {TodoItem} from "../../../models/TodoItem";
 
 const s3 = new S3({signatureVersion: 'v4'})
 const dynamo = new DynamoDB.DocumentClient();

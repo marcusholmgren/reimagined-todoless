@@ -4,17 +4,45 @@ import * as AWS from "aws-sdk";
 import {UpdateTodoRequest} from "../requests/UpdateTodoRequest";
 
 
+/**
+ * Todo item storage
+ */
 export interface TodoRepository {
+    /**
+     * Persist a new Todo item
+     * @param newItem
+     */
     create(newItem: TodoItem): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>>;
 
+    /**
+     * Get all Todo items for a user
+     * @param userId
+     */
     queryByUser(userId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError>>;
 
+    /**
+     * Get a specific Todo with identity key
+     * @param todoId - identity key
+     */
     queryByTodo(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError>>
 
+    /**
+     * Update a Todo item with identity key
+     * @param todoId - identity key
+     * @param updatedTodo - values to updated
+     */
     update(todoId: string, updatedTodo: UpdateTodoRequest): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>>
 
+    /**
+     * Flag Todo item that it have attachment
+     * @param todoId
+     */
     updateHaveAttachment(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>>
 
+    /**
+     * Permanently remove a Todo item with identity key
+     * @param todoId - identity key
+     */
     delete(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError>>
 }
 
