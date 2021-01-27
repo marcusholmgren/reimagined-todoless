@@ -66,13 +66,19 @@ functions:
           cors: true
 
   CreateTodo:
-    handler: src/lambda/http/createTodo.handler
+    handler: src/lambda/todos/create/http.handler
     events:
       - http:
           method: post
           path: todos
           authorizer: Auth
           cors: true
+    iamRoleStatementsName: ${self:service.name}-create-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}
 
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
