@@ -4,9 +4,6 @@ plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
 
-# custom:
-#  settings:
-#    TODOS_DYNAMODB_TABLE: todos
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -28,25 +25,6 @@ provider:
     TODOS_DYNAMODB_USER_INDEX: UserIdIndex
     TODOS_ATTACHMENT_BUCKET: reimagined-todoless-${self:provider.stage}
 
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}"
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}/index/${self:provider.environment.TODOS_DYNAMODB_USER_INDEX}"
-    - Effect: Allow
-      Action:
-        - 's3:*'
-      Resource: arn:aws:s3:::${self:provider.environment.TODOS_ATTACHMENT_BUCKET}/*
-
   tracing:
     lambda: true
     apiGateway: true
@@ -57,49 +35,96 @@ functions:
     handler: src/lambda/auth/auth0Authorizer.handler
 
   GetTodos:
-    handler: src/lambda/http/getTodos.handler
+    handler: src/lambda/get/http.handler
     events:
       - http:
           method: get
           path: todos
           authorizer: Auth
           cors: true
+    iamRoleStatementsName: ${self:service.name}-get-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}/index/${self:provider.environment.TODOS_DYNAMODB_USER_INDEX}
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.TODOS_ATTACHMENT_BUCKET}/*
 
   CreateTodo:
-    handler: src/lambda/http/createTodo.handler
+    handler: src/lambda/create/http.handler
     events:
       - http:
           method: post
           path: todos
           authorizer: Auth
           cors: true
+    iamRoleStatementsName: ${self:service.name}-create-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}
 
   UpdateTodo:
-    handler: src/lambda/http/updateTodo.handler
+    handler: src/lambda/update/http.handler
     events:
       - http:
           method: patch
           path: todos/{todoId}
           authorizer: Auth
           cors: true
+    iamRoleStatementsName: ${self:service.name}-update-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}
 
   DeleteTodo:
-    handler: src/lambda/http/deleteTodo.handler
+    handler: src/lambda/delete/http.handler
     events:
       - http:
           method: delete
           path: todos/{todoId}
           authorizer: Auth
           cors: true
+    iamRoleStatementsName: ${self:service.name}-delete-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:DeleteObject
+        Resource: arn:aws:s3:::${self:provider.environment.TODOS_ATTACHMENT_BUCKET}/*
 
   GenerateUploadUrl:
-    handler: src/lambda/http/generateUploadUrl.handler
+    handler: src/lambda/attachmentUpload/http.handler
     events:
       - http:
           method: post
           path: todos/{todoId}/attachment
           authorizer: Auth
           cors: true
+    iamRoleStatementsName: ${self:service.name}-generate-upload-url-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TODOS_DYNAMODB_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.TODOS_ATTACHMENT_BUCKET}/*
 
 
 resources:
@@ -113,8 +138,10 @@ resources:
           - AttributeName: "userId"
             AttributeType: "S"
         KeySchema:
-          - AttributeName: "todoId"
+          - AttributeName: "userId"
             KeyType: "HASH"
+          - AttributeName: "todoId"
+            KeyType: "RANGE"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
