@@ -3,6 +3,8 @@ service: serverless-todo-app
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 
 # You can pin your service to only deploy with a specific Serverless version
@@ -28,6 +30,46 @@ provider:
   tracing:
     lambda: true
     apiGateway: true
+
+custom:
+  documentation:
+    api:
+      info:
+        version: '0.1.0'
+        title: Reimagined Todoless API
+        description: This is the reimagined Todoless API
+      tags:
+        -
+          name: Todoless
+          description: Todo item management
+    models:
+      - name: CreateTodoRequest
+        contentType: "application/json"
+        description: "Create new todo item"
+        schema:
+          required:
+            - name
+            - dueDate
+          properties:
+            name:
+              type: string
+            dueDate:
+              type: string
+      - name: UpdateTodoRequest
+        contentType: "application/json"
+        description: "Update existing todo item"
+        schema:
+          required:
+            - name
+            - dueDate
+            - done
+          properties:
+            name:
+              type: string
+            dueDate:
+              type: string
+            done:
+              type: boolean
 
 functions:
 
@@ -65,6 +107,14 @@ functions:
           path: todos
           authorizer: Auth
           cors: true
+          reqValidatorName: 'onlyBodyValidation'
+          documentation:
+            summary: "Create todo"
+            description: "Create new todo item"
+            tags:
+              - Todoless
+            requestModels:
+              "application/json": CreateTodoRequest
     iamRoleStatementsName: ${self:service.name}-create-todo-role-${self:provider.stage}
     iamRoleStatements:
       - Effect: Allow
@@ -80,6 +130,14 @@ functions:
           path: todos/{todoId}
           authorizer: Auth
           cors: true
+          reqValidatorName: 'onlyBodyValidation'
+          documentation:
+            summary: "Update todo"
+            description: "Update existing todo item"
+            tags:
+              - Todoless
+            requestModels:
+              "application/json": UpdateTodoRequest
     iamRoleStatementsName: ${self:service.name}-update-todo-role-${self:provider.stage}
     iamRoleStatements:
       - Effect: Allow
@@ -197,3 +255,12 @@ resources:
                 - PUT
               AllowedOrigins:
                 - "*"
+
+    onlyBodyValidation:
+      Type: "AWS::ApiGateway::RequestValidator"
+      Properties:
+        Name: 'only-body-validation'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
