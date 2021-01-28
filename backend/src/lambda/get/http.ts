@@ -4,32 +4,34 @@ import * as AWSXRay from "aws-xray-sdk";
 import {APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult} from 'aws-lambda'
 import * as middy from 'middy'
 import {cors} from 'middy/middlewares'
-import {CreateTodoRequest} from '../../../requests/CreateTodoRequest'
-import {createLogger} from "../../../utils/logger";
-import {getUserId} from "../../utils";
-import {createTodo} from './createTodo'
-import {TodoDynamoDB} from "../../todoDynamoDB";
+import {createLogger} from "../../utils/logger";
+import {getUserId} from "../utils";
+import {TodoDynamoDB} from "../todoDynamoDB";
+import {getTodos} from "./getTodos";
+import {TodoAttachmentS3} from "../todoAttachmentBucket";
 
 const XAWS = AWSXRay.captureAWS(AWS)
-const dynamoDB = new TodoDynamoDB(
+const todoRepository = new TodoDynamoDB(
     new XAWS.DynamoDB.DocumentClient(),
-    process.env.TODOS_DYNAMODB_TABLE,)
-
+    process.env.TODOS_DYNAMODB_TABLE)
+const attachmentBucket = new TodoAttachmentS3(
+    new XAWS.S3({signatureVersion: 'v4'}),
+    process.env.TODOS_ATTACHMENT_BUCKET)
 const log = createLogger('todoless')
 
+
 export const handler: APIGatewayProxyHandler = middy(async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const newTodo: CreateTodoRequest = JSON.parse(event.body)
     const userId = getUserId(event)
 
     try {
-        const results = await createTodo(userId, newTodo, dynamoDB)
+        const result = await getTodos(userId, todoRepository, attachmentBucket);
 
         return {
-            statusCode: 201,
-            body: JSON.stringify({item: results.Attributes}),
+            statusCode: 200,
+            body: JSON.stringify({items: result.Items}),
         }
     } catch (error) {
-        const message = `Failed to store TODO item. ${error}`
+        const message = `Failed to get todos: ${error}`
         log.error(message)
         return {
             statusCode: 400,

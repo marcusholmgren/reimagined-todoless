@@ -1,7 +1,7 @@
 import {TodoItem} from "../models/TodoItem";
 import {PromiseResult} from "aws-sdk/lib/request";
 import * as AWS from "aws-sdk";
-import {UpdateTodoRequest} from "../requests/UpdateTodoRequest";
+import {TodoUpdate} from "../models/TodoUpdate";
 
 
 /**
@@ -22,28 +22,33 @@ export interface TodoRepository {
 
     /**
      * Get a specific Todo with identity key
-     * @param todoId - identity key
+     * @param key - identity key
      */
-    queryByTodo(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError>>
+    get(key: TodoTableKey): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.GetItemOutput, AWS.AWSError>>
 
     /**
      * Update a Todo item with identity key
-     * @param todoId - identity key
-     * @param updatedTodo - values to updated
+     * @param key - identity key
+     * @param todoUpdate - values to updated
      */
-    update(todoId: string, updatedTodo: UpdateTodoRequest): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>>
+    update(key: TodoTableKey, todoUpdate: TodoUpdate): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>>
 
     /**
      * Flag Todo item that it have attachment
-     * @param todoId
+     * @param key - identity key
      */
-    updateHaveAttachment(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>>
+    updateHaveAttachment(key: TodoTableKey): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>>
 
     /**
      * Permanently remove a Todo item with identity key
-     * @param todoId - identity key
+     * @param key - identity key
      */
-    delete(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError>>
+    delete(key: TodoTableKey): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError>>
+}
+
+type TodoTableKey = {
+    todoId: string,
+    userId: string
 }
 
 export class TodoDynamoDB implements TodoRepository {
@@ -55,7 +60,8 @@ export class TodoDynamoDB implements TodoRepository {
         const params: AWS.DynamoDB.DocumentClient.UpdateItemInput = {
             TableName: this.tableName,
             Key: {
-                todoId: newItem.todoId
+                todoId: newItem.todoId,
+                userId: newItem.userId
             },
             ExpressionAttributeNames: {
                 '#todo_name': 'name',
@@ -65,9 +71,8 @@ export class TodoDynamoDB implements TodoRepository {
                 ':dueDate': newItem.dueDate,
                 ':name': newItem.name,
                 ':createdAt': newItem.createdAt,
-                ':userId': newItem.userId,
             },
-            UpdateExpression: 'SET #todo_name = :name, done = :done, dueDate = :dueDate, createdAt = :createdAt, userId = :userId',
+            UpdateExpression: 'SET #todo_name = :name, done = :done, dueDate = :dueDate, createdAt = :createdAt',
             ReturnValues: 'ALL_NEW'
         }
 
@@ -87,31 +92,31 @@ export class TodoDynamoDB implements TodoRepository {
         return await this.dynamo.query(params).promise();
     }
 
-    async queryByTodo(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.QueryOutput, AWS.AWSError>> {
-        const params: AWS.DynamoDB.DocumentClient.QueryInput = {
+    async get(key: TodoTableKey): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.GetItemOutput, AWS.AWSError>> {
+        const params: AWS.DynamoDB.DocumentClient.GetItemInput = {
             TableName: this.tableName,
-            KeyConditionExpression: 'todoId = :todoId',
-            ExpressionAttributeValues: {
-                ':todoId': todoId
+            Key: {
+                todoId: key.todoId,
+                userId: key.userId
             }
         }
-
-        return await this.dynamo.query(params).promise();
+        return await this.dynamo.get(params).promise();
     }
 
-    async update(todoId: string, updatedTodo: UpdateTodoRequest): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>> {
+    async update(key: TodoTableKey, todoUpdate: TodoUpdate): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>> {
         const params: AWS.DynamoDB.DocumentClient.UpdateItemInput = {
             TableName: this.tableName,
             Key: {
-                todoId: todoId
+                todoId: key.todoId,
+                userId: key.userId
             },
             ExpressionAttributeNames: {
                 '#todo_name': 'name',
             },
             ExpressionAttributeValues: {
-                ':done': updatedTodo.done,
-                ':dueDate': updatedTodo.dueDate,
-                ':name': updatedTodo.name
+                ':done': todoUpdate.done,
+                ':dueDate': todoUpdate.dueDate,
+                ':name': todoUpdate.name
             },
             UpdateExpression: 'SET #todo_name = :name, done = :done, dueDate = :dueDate',
             ReturnValues: 'ALL_NEW'
@@ -120,14 +125,15 @@ export class TodoDynamoDB implements TodoRepository {
         return await this.dynamo.update(params).promise()
     }
 
-    async updateHaveAttachment(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>> {
+    async updateHaveAttachment(key: TodoTableKey): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.UpdateItemOutput, AWS.AWSError>> {
         const params: AWS.DynamoDB.DocumentClient.UpdateItemInput = {
             TableName: this.tableName,
             Key: {
-                todoId: todoId
+                todoId: key.todoId,
+                userId: key.userId
             },
             ExpressionAttributeValues: {
-                ':attachmentUrl': `${todoId}`,
+                ':attachmentUrl': `${key.todoId}`,
             },
             UpdateExpression: 'SET attachmentUrl = :attachmentUrl',
             ReturnValues: 'ALL_NEW'
@@ -136,11 +142,12 @@ export class TodoDynamoDB implements TodoRepository {
         return await this.dynamo.update(params).promise()
     }
 
-    async delete(todoId: string): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError>> {
+    async delete(key: TodoTableKey): Promise<PromiseResult<AWS.DynamoDB.DocumentClient.DeleteItemOutput, AWS.AWSError>> {
         const params: AWS.DynamoDB.DocumentClient.DeleteItemInput = {
             TableName: this.tableName,
             Key: {
-                todoId: todoId
+                todoId: key.todoId,
+                userId: key.userId
             }
         }
 

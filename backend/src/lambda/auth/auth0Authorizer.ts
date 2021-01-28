@@ -1,9 +1,9 @@
-import { CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda'
+import {CustomAuthorizerEvent, CustomAuthorizerResult} from 'aws-lambda'
 import 'source-map-support/register'
 
-import { verify } from 'jsonwebtoken'
-import { createLogger } from '../../utils/logger'
-import { JwtPayload } from '../../auth/JwtPayload'
+import {verify} from 'jsonwebtoken'
+import {createLogger} from '../../utils/logger'
+import {JwtPayload} from '../../auth/JwtPayload'
 
 const logger = createLogger('auth')
 
@@ -52,8 +52,8 @@ export const handler = async (
         ]
       }
     }
-  } catch (e) {
-    logger.error('User not authorized', { error: e.message })
+  } catch (error) {
+    logger.error('User not authorized', { error: error.message })
 
     return {
       principalId: 'user',
@@ -86,7 +86,5 @@ function getToken(authHeader: string): string {
     throw new Error('Invalid authentication header')
 
   const split = authHeader.split(' ')
-  const token = split[1]
-
-  return token
+  return split[1]
 }
