@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Form, Button } from "semantic-ui-react";
+import {Form, Button} from "semantic-ui-react";
 import Auth from "../auth/Auth";
-import { getUploadUrl, uploadFile } from "../api/todos-api";
+import {getUploadUrl, uploadFile} from "../api/todos-api";
 import {WarningMessage} from './MessagePanel'
 
 enum UploadState {
@@ -25,10 +25,8 @@ interface EditTodoState {
   warning: { header: string, message: string } | null;
 }
 
-export class EditTodo extends React.PureComponent<
-  EditTodoProps,
-  EditTodoState
-> {
+export class EditTodo extends React.PureComponent<EditTodoProps,
+  EditTodoState> {
   state: EditTodoState = {
     file: undefined,
     uploadState: UploadState.NoUpload,
@@ -49,13 +47,12 @@ export class EditTodo extends React.PureComponent<
 
     try {
       if (!this.state.file) {
-        //alert("File should be selected");
-              this.setState({
-        warning: {
-          header: "File should be selected",
-          message: "File should be selected"
-        }
-      })
+        this.setState({
+          warning: {
+            header: "File should be selected",
+            message: "File should be selected"
+          }
+        })
         return;
       }
 
@@ -68,16 +65,14 @@ export class EditTodo extends React.PureComponent<
       this.setUploadState(UploadState.UploadingFile);
       await uploadFile(uploadUrl, this.state.file);
 
-      //alert("File was uploaded!");
-            this.setState({
+      this.setState({
         warning: {
           header: "File was uploaded!",
           message: "File was uploaded!"
         }
       })
     } catch (e) {
-      //alert("Could not upload a file: " + e.message);
-            this.setState({
+      this.setState({
         warning: {
           header: 'File upload failed',
           message: `Could not upload a file: ${e.message}`
@@ -96,7 +91,7 @@ export class EditTodo extends React.PureComponent<
 
   render() {
     const warningElement = this.state.warning ?
-      (<WarningMessage header={this.state.warning.header} message={this.state.warning.message} />) : null
+      (<WarningMessage header={this.state.warning.header} message={this.state.warning.message}/>) : null
 
     return (
       <div>
