@@ -53,8 +53,12 @@ custom:
           properties:
             name:
               type: string
+              minLength: 1
+              maxLength: 100
+              pattern: "^(?!\\s*$).+"
             dueDate:
               type: string
+              format: "date"
       - name: UpdateTodoRequest
         contentType: "application/json"
         description: "Update existing todo item"
@@ -66,8 +70,12 @@ custom:
           properties:
             name:
               type: string
+              minLength: 1
+              maxLength: 100
+              pattern: "^(?!\\s*$).+"
             dueDate:
               type: string
+              format: "date"
             done:
               type: boolean
 
